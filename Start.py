@@ -182,7 +182,6 @@ def get_info_by_parameter():
     name_for_print = []
     age = int(age)
     #data_from_data_base = utils.get_data_from_file(name, age, _data_base)
-    #print(data_from_data_base)
     if name is None and age == 0:
         error_count += 1
         return "enter name OR age"
