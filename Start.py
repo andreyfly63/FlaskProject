@@ -29,7 +29,27 @@ request_start_time = 0
 request_stop_time = 0
 error_count = 0
 success_count = 0
+time_interval = 60
 app = Flask(__name__)
+
+
+@app.before_request
+def before_request():
+    global request_start_time
+    request_start_time = time.time()
+    print("start=", request_start_time)
+
+
+@app.after_request
+def after_request(response):
+    global time_count, request_start_time, request_stop_time, time_interval
+    request_stop_time = time.time()
+    time_count[time.time()] = request_stop_time-request_start_time
+    for key in list(time_count.keys()):
+        if request_stop_time-key > time_interval:
+            del time_count[key]
+    print("time=", time_count)
+    return response
 
 
 @app.route("/geterror")
@@ -55,48 +75,19 @@ def get_all_request():
 
 @app.route("/getapm")
 def get_apm():
-    temp = 1
+    global success_count, time_count, error_count, time_interval
+    time_interval = int(request.args.get('interval', 60))
     temp_time = 0
     next_time = time.time()
-    global success_count, time_count, error_count
     success_count += 1
-    for key in list(time_count.keys()):
-        if not list(time_count.keys()):
-            break
-        elif next_time-key < 60:
-            temp += 1
-            temp_time += time_count[key]
-            #print("temp=",temp,"time=",temp_time)
-        else:
-            print(next_time,"-",key,"=",next_time-key)
-            del time_count[key]
-    apm = temp_time/temp
     if not time_count:
-        apm = next_time - request_start_time
-        return jsonify(apm)
-    #print("всего запросов=", success_count+error_count," запросов за минуту=", temp, "затраченое время=", temp_time)
+        print("time1=", time.time() - next_time)
+        return jsonify("apm=", time.time() - next_time)
+    else:
+        for key in list(time_count.keys()):
+            temp_time += time_count[key]
+    apm = temp_time/len(list(time_count.keys()))
     return jsonify("apm=", apm)
-
-#    return jsonify(apm)
-
-
-@app.before_request
-def before_request():
-    global request_start_time
-    request_start_time = time.time()
-    print("start=", request_start_time)
-
-
-@app.after_request
-def after_request(response):
-    global time_count
-    global request_start_time
-    global request_stop_time
-    request_stop_time = time.time()
-#    r = request_stop_time-request_start_time
-    time_count[time.time()] = request_stop_time-request_start_time
-#    print("stop=", request_stop_time, "dev", r,"  ", time_count)
-    return response
 
 
 @app.route("/clearall")
